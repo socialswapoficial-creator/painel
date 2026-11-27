@@ -224,11 +224,51 @@ heroForm.addEventListener("submit", event => submit(event, async fields => {
   notice("Banners atualizados na vitrine.");
 }, error => notice(error.message || "Não foi possível salvar os banners.")));
 
+byId("reset-password").addEventListener("click", async event => {
+  const email = byId("login").elements.email;
+  if (!email.reportValidity()) return;
+  const control = event.currentTarget;
+  control.disabled = true;
+  try {
+    checked(await client.auth.resetPasswordForEmail(email.value.trim(), {
+      redirectTo: "https://moda-infatil-6bis.vercel.app/"
+    }));
+    notice("Confira sua caixa de entrada e o spam para abrir o link de recuperação.");
+  } catch {
+    notice("O Supabase não conseguiu enviar o link. Confira a configuração de e-mail do projeto ou tente novamente em instantes.");
+  } finally {
+    control.disabled = false;
+  }
+});
+
+byId("new-password").addEventListener("submit", event => submit(event, async fields => {
+  checked(await client.auth.updateUser({password: fields.password.value}));
+  fields.password.value = "";
+  checked(await client.auth.signOut({scope:"local"}));
+  byId("new-password").hidden = true;
+  await loadDashboard(null);
+  notice("Senha atualizada. Entre com a nova senha.");
+}, () => notice("Não foi possível salvar a senha. Confira se o link ainda está válido e use uma senha de pelo menos 8 caracteres.")));
+
 try {
   client = await connect();
   if (client) {
+    let recovering = new URLSearchParams(location.hash.slice(1)).get("type") === "recovery";
+    client.auth.onAuthStateChange(event => {
+      if (event !== "PASSWORD_RECOVERY") return;
+      recovering = true;
+      byId("login").hidden = true;
+      byId("dashboard").hidden = true;
+      byId("logout").hidden = true;
+      byId("new-password").hidden = false;
+      notice("Defina uma nova senha para acessar o painel.");
+    });
     const { session } = checked(await client.auth.getSession());
-    await loadDashboard(session);
+    if (recovering && !session) {
+      byId("new-password").hidden = true;
+      await loadDashboard(null);
+      notice("O link expirou. Solicite outro pelo botão Esqueci minha senha.");
+    } else if (!recovering) await loadDashboard(session);
   } else {
     notice("O painel aguarda a configuração do Supabase.");
   }

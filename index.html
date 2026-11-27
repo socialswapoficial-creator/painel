@@ -15,6 +15,12 @@
   <label>E-mail <input name="email" type="email" autocomplete="username" required></label>
   <label>Senha <input name="password" type="password" autocomplete="current-password" required></label>
   <button class="primary">Entrar no painel</button>
+  <button type="button" id="reset-password">Esqueci minha senha</button>
+</form>
+<form id="new-password" hidden>
+  <h2>Crie uma nova senha</h2>
+  <label>Nova senha <input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+  <button class="primary">Salvar nova senha</button>
 </form>
 <div id="dashboard" hidden>
 <section>
